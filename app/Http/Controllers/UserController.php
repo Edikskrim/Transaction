@@ -32,6 +32,12 @@ class UserController extends Controller
             ]);
         }
 
+    public function flashMessage($request,$message,$class)
+        {
+            $request->session()->flash('status', $message);
+            $request->session()->flash('status-class', $class);
+        }
+
     public function update(Request $request, $id)
         {
             $userTransactionId = $request['user_transaction_id'];
@@ -39,35 +45,29 @@ class UserController extends Controller
             if ($this->users->find($userTransactionId) === false)
                 {
                     $message = 'Неизвезтный пользователь';
-                    $request->session()->flash('status', $message);
-                    $request->session()->flash('status-class', 'alert-danger');
+                    $this->flashMessage($request,$message,'alert-danger');
                     Log::error($message, [
                         'user_id' => $id,
                         'user_balance' => $userMoney
                     ]);
-                    return redirect()->route('user.transaction', $id);
                 }
             if ($request['money'] <= 0)
                 {
                     $message = 'Не корректная сумма';
-                    $request->session()->flash('status', $message);
-                    $request->session()->flash('status-class', 'alert-danger');
+                    $this->flashMessage($request,$message,'alert-danger');
                     Log::error($message, [
                         'user_id' => $id,
                         'user_balance' => $userMoney
                     ]);
-                    return redirect()->route('user.transaction', $id);
                 }
             if ($request['money'] > $userMoney)
                 {
                     $message = 'Вам не хватает средств для перевода';
-                    $request->session()->flash('status', $message);
-                    $request->session()->flash('status-class', 'alert-danger');
+                    $this->flashMessage($request,$message,'alert-danger');
                     Log::error($message, [
                         'user_id' => $id,
                         'user_balance' => $userMoney
                     ]);
-                    return redirect()->route('user.transaction', $id);
                 }
             else
                 {
@@ -87,23 +87,20 @@ class UserController extends Controller
                             DB::commit();
 
                             $message = 'Операция выполнена';
-                            $request->session()->flash('status', $message);
-                            $request->session()->flash('status-class', 'alert-success');
+                            $this->flashMessage($request,$message,'alert-success');
                             Log::info($message, [
                                 'user_id' => $id,
                                 'user_balance' => $userMoney,
                                 'transaction' => $request['money'],
                                 'user_transaction_id' => $userTransactionId
                             ]);
-                            return redirect()->route('user.transaction', $id);
                         }
                     catch (\Exception $e)
                         {
                             DB::rollback();
-                            $request->session()->flash('status', $e->getMessage());
-                            $request->session()->flash('status-class', 'alert-danger');
-                            return redirect()->route('user.transaction', $id);
+                            $this->flashMessage($request,$e->getMessage(),'alert-danger');
                         }
                 }
+            return redirect()->route('user.transaction', $id);
         }
     }
